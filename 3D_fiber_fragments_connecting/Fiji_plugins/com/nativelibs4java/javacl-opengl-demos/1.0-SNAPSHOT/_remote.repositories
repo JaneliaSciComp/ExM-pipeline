@@ -1,0 +1,8 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Apr 19 20:11:33 JST 2016
+javacl-opengl-demos-1.0-SNAPSHOT-javadoc.jar>=
+javacl-opengl-demos-1.0-SNAPSHOT.jar>=
+javacl-opengl-demos-1.0-SNAPSHOT-shaded.jar>=
+javacl-opengl-demos-1.0-SNAPSHOT.pom>=
+javacl-opengl-demos-1.0-SNAPSHOT-sources.jar>=
+javacl-opengl-demos-1.0-SNAPSHOT-tests.jar>=

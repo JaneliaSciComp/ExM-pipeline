@@ -1,0 +1,7 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Apr 19 20:06:57 JST 2016
+javacl-core-1.0-SNAPSHOT-tests.jar>=
+javacl-core-1.0-SNAPSHOT-javadoc.jar>=
+javacl-core-1.0-SNAPSHOT.jar>=
+javacl-core-1.0-SNAPSHOT.pom>=
+javacl-core-1.0-SNAPSHOT-sources.jar>=

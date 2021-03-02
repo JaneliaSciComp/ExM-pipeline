@@ -1,0 +1,6 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Apr 19 20:06:46 JST 2016
+libcl-1.0-SNAPSHOT.jar>=
+libcl-1.0-SNAPSHOT-sources.jar>=
+libcl-1.0-SNAPSHOT.pom>=
+libcl-1.0-SNAPSHOT-tests.jar>=

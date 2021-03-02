@@ -1,0 +1,7 @@
+#NOTE: This is an Aether internal implementation file, its format can be changed without prior notice.
+#Tue Apr 19 20:09:24 JST 2016
+maven-javacl-plugin-1.0-SNAPSHOT-javadoc.jar>=
+maven-javacl-plugin-1.0-SNAPSHOT.jar>=
+maven-javacl-plugin-1.0-SNAPSHOT-tests.jar>=
+maven-javacl-plugin-1.0-SNAPSHOT-sources.jar>=
+maven-javacl-plugin-1.0-SNAPSHOT.pom>=

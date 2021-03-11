@@ -1,0 +1,13 @@
+maru_version: 0.1.1
+name: exm-tools-fiji
+version: 1.0.0
+build_args:
+  GIT_TAG: main
+template_args:
+  flavor: fiji_macro
+  build:
+    repo_url: https://github.com/JaneliaSciComp/ExM-pipeline.git
+  fiji_macro:
+    plugin_dir: 3D_fiber_fragments_connecting/Fiji_plugins
+    macro_dir: 3D_fiber_fragments_connecting
+    macro_name: 3D_fiber_fragments_connecting/Mask_connectionGPU.ijm

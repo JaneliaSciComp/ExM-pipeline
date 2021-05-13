@@ -8,15 +8,15 @@ ARG GIT_TAG=main
 # Checkout and build the code
 WORKDIR /tmp/app
 RUN git clone --branch $GIT_TAG --depth 1 https://github.com/JaneliaSciComp/ExM-pipeline.git . \
-    && /usr/local/bin/buildinfo.sh 
+    && /usr/local/bin/buildinfo.sh
 
 # Create final image
-FROM janeliascicomp/fiji:fiji-openjdk-8
+FROM janeliascicomp/fiji-zulu-8:20201021-2016
 
 COPY --from=builder /buildinfo /
-COPY --from=builder /tmp/app/*/Fiji_plugins /opt/fiji/Fiji.app/plugins
-COPY --from=builder /tmp/app/*/*.ijm /opt/fiji/Fiji.app/macros
+COPY --from=builder /tmp/app/*/Fiji_plugins /app/fiji/Fiji.app/plugins
+COPY --from=builder /tmp/app/*/*.ijm /app/fiji/Fiji.app/macros
 
-ENTRYPOINT [ "/opt/fiji/entrypoint.sh", "--headless", "-macro" ]
+ENTRYPOINT [ "/app/fiji/entrypoint.sh", "--headless", "-macro" ]
 CMD [ "Mask_connectionGPU.ijm" ]
 

@@ -5,10 +5,10 @@ connectionVX=$2
 connectiontime=$3
 
 
-FIJI="/nrs/scicompsoft/otsuna/Macros/Fiji_Linux.app/ImageJ-linux64"
+FIJI="/nrs/scicompsoft/kawaset/oldmacro/Fiji_Linux.app/ImageJ-linux64"
 
 CMTK="/Applications/FijizOLD.app/bin/cmtk"
-MACRO="/nrs/scicompsoft/otsuna/Macros/ExM_expand/Mask_connectionGPU.ijm"
+MACRO="/nrs/scicompsoft/kawaset/oldmacro/Mask_connectionGPU.ijm"
 
 
 errorfile=${smallmaskpath%.*}"_fail.txt"
@@ -32,18 +32,18 @@ if [[ -e $smallmaskpath ]]; then
 fi
 #fi
 
-num=0
-while [ -e $errorfile ]
-do
-  rm -rf $errorfile
-
-  $FIJI --headless -macro ${MACRO} "${smallmaskpath},${connectionVX},${connectiontime}"
-  num=$((num+1))
-
-  if [[ $num == 20 ]]; then
-    break
-  fi
-done
+#num=0
+#while [ -e $errorfile ]
+#do
+#  rm -rf $errorfile
+#
+#  $FIJI --headless -macro ${MACRO} "${smallmaskpath},${connectionVX},${connectiontime}"
+#  num=$((num+1))
+#
+#  if [[ $num == 20 ]]; then
+#    break
+#  fi
+#done
 
 
 

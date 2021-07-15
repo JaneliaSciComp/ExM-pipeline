@@ -29,43 +29,22 @@ print("connectiontime; "+connectiontime);
 
 if(dotIndexend!=-1){	
 	open(input);
+
+	input_title = getTitle();
+	print(input_title);
 	
 	success=0; failnum=300;
 
 	mingaptime=(8000/400)*nSlices;
+
+	start=getTime();
+	run("Connect Flagments", "radius="+connectionVX+" iteration="+connectiontime);
+		
+	end=getTime();
+	gap=end-start;
 	
-	for(iconnect=0; iconnect<connectiontime; iconnect++){
-		start=getTime();
-		run("Connect Flagments", "radius="+connectionVX+"");
-		
-		end=getTime();
-		gap=end-start;
-		
-		num=0;
-		while(gap<mingaptime){
-			wait(600);
-			start=getTime();
-			run("Connect Flagments", "radius="+connectionVX+"");
-			
-			end=getTime();
-			gap=end-start;
-			
-			print(iconnect+"-num; "+num+"  gap; "+gap+" ms");
-			num=num+1;
-			
-			if(num==failnum)
-			gap=mingaptime+1;
-		}
-		
-		print("iconnect; "+iconnect+"__"+gap/1000+" sec"+"   "+input);
-		wait(2500);
-		
-		if(gap>mingaptime+mingaptime*0.25)
-		success=success+1;
-	}
-	
-	print("success; "+success+" times");
-	
+	print("duration: "+gap/1000+" sec"+"   "+input);
+
 	pathindex=lastIndexOf(input,"/");
 	parentsdir=substring(input,0,pathindex);
 	
@@ -78,12 +57,12 @@ if(dotIndexend!=-1){
 	parentsdir=substring(parentsdir,0,pathindex+1);
 	
 	print("parentsdir; "+parentsdir);
+
+	output_title = getTitle();
 	
-	if(success==round(connectiontime)){
-		
+	if(input_title != output_title){
 		saveAs("ZIP", input);
 	}else{
-		saveAs("ZIP", parentsdir+filename+"_suc_"+success+"_fail");
 		File.saveString("fail", origidir+filename+"_fail.txt"); //- Saves string as a file. 
 	}
 	run("Close All");

@@ -22,6 +22,7 @@ import com.nativelibs4java.util.*;
 
 public class Connect_Flagments implements PlugInFilter {
 	ImagePlus imp_;
+	int iteration_ = (int)Prefs.get("iteration.int",1);
 	int r_max_  = (int)Prefs.get("r_max.int",10);
 	int r_min_  = (int)Prefs.get("r_min.int",10);
 	int r_step_  = (int)Prefs.get("r_step.int",1);
@@ -41,17 +42,20 @@ public class Connect_Flagments implements PlugInFilter {
 		
 		String[] types = {"GAUSSIAN", "MEAN"};
 		gd.addNumericField("Radius",  r_max_, 0);
+		gd.addNumericField("Iteration",  iteration_, 0);
 		gd.showDialog();
 		
 		if (gd.wasCanceled()) return false;
 		r_max_ = (int)gd.getNextNumber();
+		iteration_ = (int)gd.getNextNumber();
 		
 		r_min_ = r_max_;
 		r_step_ = 1;
 		quality_ = 10;
 		ftype_ = "GAUSSIAN";
 		threshold_ = 50;
-		
+
+		Prefs.set("iteration.int", iteration_);
 		Prefs.set("r_max.int", r_max_);
 		Prefs.set("r_min.int", r_min_);
 		Prefs.set("r_step.int", r_step_);
@@ -170,81 +174,83 @@ public class Connect_Flagments implements PlugInFilter {
 		
 		for(int f = 0; f < nFrame; f++){
 			for(int ch = 0; ch < nCh; ch++){
-				ImageProcessor[] iplist = new ImageProcessor[imageD];
-				ImageProcessor[] oplist = new ImageProcessor[imageD];
-				for(int s = 0; s < imageD; s++){
-					iplist[s] =  istack.getProcessor(imp_.getStackIndex(ch+1, s+1, f+1));
-					oplist[s] =  ostack.getProcessor(newimp.getStackIndex(ch+1, s+1, f+1));
-				}
-				
-				for(int z = 0; z < imageD; z++)
-					for(int i = 0; i < imageW*imageH; i++)
-						in_buf.put(iplist[z].getf(i));
-
-				CLImage3D in_tex = context.createImage3D(Usage.InputOutput, imformat,
-														 imageW, imageH, imageD,
-														 0, 0,
-														 in_buf, true);
-
-				Pointer<Float> pattern_max = pointerToFloats(Float.MAX_VALUE);
-				Pointer<Float> pattern_zero = pointerToFloats(0.0f);
-				CLEvent dsltEvt = out_cl_buf.fillBuffer(queue, pattern_zero);
-				queue.finish();
-
-				long start, end;
-				for(int r = r_max_; r >= r_min_ && r > 0; r = (r != r_min_ && r-r_step_ < r_min_) ? r_min_ : r-r_step_){
-					final double[] filter = (filtertype == 1) ? mean1D(r) : gaussian1D(r);
-					if(filter == null) continue;
+				for(int ite = 0; ite < iteration_; ite++){
+					ImageProcessor[] iplist = new ImageProcessor[imageD];
+					ImageProcessor[] oplist = new ImageProcessor[imageD];
+					for(int s = 0; s < imageD; s++){
+						iplist[s] =  ite == 0 ? istack.getProcessor(imp_.getStackIndex(ch+1, s+1, f+1)) : ostack.getProcessor(newimp.getStackIndex(ch+1, s+1, f+1));
+						oplist[s] =  ostack.getProcessor(newimp.getStackIndex(ch+1, s+1, f+1));
+					}
 					
-					Pointer<Float> fptr = Pointer.allocateFloats(r+1).order(byteOrder);
-					for (int i = 0; i <= r; i++)
-						fptr.set(i, (float)filter[r+i]);
+					for(int z = 0; z < imageD; z++)
+						for(int i = 0; i < imageW*imageH; i++)
+							in_buf.put(iplist[z].getf(i));
 
-					CLBuffer<Float> cl_filter = context.createFloatBuffer(Usage.Input, fptr);
+					CLImage3D in_tex = context.createImage3D(Usage.InputOutput, imformat,
+															 imageW, imageH, imageD,
+															 0, 0,
+															 in_buf, true);
 
-					start = System.nanoTime();
+					Pointer<Float> pattern_max = pointerToFloats(Float.MAX_VALUE);
+					Pointer<Float> pattern_zero = pointerToFloats(0.0f);
+					CLEvent dsltEvt = out_cl_buf.fillBuffer(queue, pattern_zero);
+					queue.finish();
 
-					for(int n = 0; n < knum; n++){
-						final float drx = (float)(slatitable[n]*clongitable[n]);
-						final float dry = (float)(slatitable[n]*slongitable[n]);
-						final float drz = (float)clatitable[n];
+					long start, end;
+					for(int r = r_max_; r >= r_min_ && r > 0; r = (r != r_min_ && r-r_step_ < r_min_) ? r_min_ : r-r_step_){
+						final double[] filter = (filtertype == 1) ? mean1D(r) : gaussian1D(r);
+						if(filter == null) continue;
+					
+						Pointer<Float> fptr = Pointer.allocateFloats(r+1).order(byteOrder);
+						for (int i = 0; i <= r; i++)
+							fptr.set(i, (float)filter[r+i]);
 
-						dsltKernel.setArgs(in_tex, out_cl_buf, n_cl_buf, cl_filter, r, n, drx, dry, drz, imageW, imageH*imageW);
-						dsltEvt = dsltKernel.enqueueNDRange(queue, new int[]{ imageW, imageH, imageD  }, dsltEvt);
-						queue.finish();
+						CLBuffer<Float> cl_filter = context.createFloatBuffer(Usage.Input, fptr);
+
+						start = System.nanoTime();
+
+						for(int n = 0; n < knum; n++){
+							final float drx = (float)(slatitable[n]*clongitable[n]);
+							final float dry = (float)(slatitable[n]*slongitable[n]);
+							final float drz = (float)clatitable[n];
+
+							dsltKernel.setArgs(in_tex, out_cl_buf, n_cl_buf, cl_filter, r, n, drx, dry, drz, imageW, imageH*imageW);
+							dsltEvt = dsltKernel.enqueueNDRange(queue, new int[]{ imageW, imageH, imageD  }, dsltEvt);
+							queue.finish();
+						}
+	
+						end = System.nanoTime();
+						IJ.log("r: "+r+"  time: "+((float)(end-start)/1000000.0)+"msec");
+	
+						cl_filter.release();
+						fptr.release();
 					}
 
-					end = System.nanoTime();
-					IJ.log("r: "+r+"  time: "+((float)(end-start)/1000000.0)+"msec");
-
-					cl_filter.release();
-					fptr.release();
-				}
-
-				Pointer<Float> outPtr = out_cl_buf.read(queue, dsltEvt);
-				queue.finish();
-				in_buf.position(0);
-				for(int idx = 0; idx < imagesize; idx++)
-					 in_buf.put(outPtr.get(idx));
-				dsltEvt = in_tex.write(queue, 0L, 0L, 0L, (long)imageW, (long)imageH, (long)imageD, (long)imageW*4L, (long)imageH*(long)imageW*4L, in_buf, false, dsltEvt);
-				queue.finish();
-				dsltL2Kernel.setArgs(in_tex, out_cl_buf, n_cl_buf, cl_sctable, r_max_, imageW, imageH, imageD, imageW, imageH*imageW);
-				dsltEvt = dsltL2Kernel.enqueueNDRange(queue, new int[]{ imageW, imageH, imageD  }, dsltEvt);
-				queue.finish();
+					Pointer<Float> outPtr = out_cl_buf.read(queue, dsltEvt);
+					queue.finish();
+					in_buf.position(0);
+					for(int idx = 0; idx < imagesize; idx++)
+						 in_buf.put(outPtr.get(idx));
+					dsltEvt = in_tex.write(queue, 0L, 0L, 0L, (long)imageW, (long)imageH, (long)imageD, (long)imageW*4L, (long)imageH*(long)imageW*4L, in_buf, false, dsltEvt);
+					queue.finish();
+					dsltL2Kernel.setArgs(in_tex, out_cl_buf, n_cl_buf, cl_sctable, r_max_, imageW, imageH, imageD, imageW, imageH*imageW);
+					dsltEvt = dsltL2Kernel.enqueueNDRange(queue, new int[]{ imageW, imageH, imageD  }, dsltEvt);
+					queue.finish();
 				
-				outPtr = out_cl_buf.read(queue, dsltEvt);
-				float maxval = 0.0f;
-				for(int idx = 0; idx < imagesize; idx++)
-					 maxval = (maxval < outPtr.get(idx)) ? outPtr.get(idx) : maxval;
-				for(int z = 0; z < imageD; z++) {
-					for(int i = 0; i < imageW*imageH; i++) {
-						float val = outPtr.get(z*imageW*imageH+i);
-						int rslt = (val/maxval*255.0 > threshold_ || iplist[z].getf(i) > 0) ? 255 : 0;
-						oplist[z].setf(i, rslt);
+					outPtr = out_cl_buf.read(queue, dsltEvt);
+					float maxval = 0.0f;
+					for(int idx = 0; idx < imagesize; idx++)
+						 maxval = (maxval < outPtr.get(idx)) ? outPtr.get(idx) : maxval;
+					for(int z = 0; z < imageD; z++) {
+						for(int i = 0; i < imageW*imageH; i++) {
+							float val = outPtr.get(z*imageW*imageH+i);
+							int rslt = (val/maxval*255.0 > threshold_ || iplist[z].getf(i) > 0) ? 255 : 0;
+							oplist[z].setf(i, rslt);
+						}
 					}
+	
+					in_buf.position(0);
 				}
-
-				in_buf.position(0);
 			}
 		}
 		

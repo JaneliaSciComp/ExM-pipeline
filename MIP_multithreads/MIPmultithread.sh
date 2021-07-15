@@ -6,7 +6,6 @@ outputdir=$3
 
 FIJI="/groups/scicompsoft/home/otsunah/Desktop/Fiji.app/ImageJ-linux64"
 
-CMTK="/Applications/FijizOLD.app/bin/cmtk"
 MACRO="/nrs/scicompsoft/otsuna/Macros/MIP_multi/MIPmultithread.ijm"
 
 echo "CPUnum; "${CPUnum}
